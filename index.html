@@ -68,7 +68,7 @@ h1{font-size:18px;color:#a855f7;letter-spacing:2px;margin-bottom:2px}
   </div>
 </div>
 
-<div class="warning" id="warning">🖱️ Нельзя кликать в одну точку!</div>
+<div class="warning" id="warning">🖱️ Обнаружен автокликер!</div>
 
 <script>
 const OS_LIST = [
@@ -276,22 +276,44 @@ function render(){
     : 'Перерождение (даст x2)';
 }
 
-// === Anti-autoclicker ===
+// === Anti-autoclicker (умная защита) ===
 const clickHistory=[];
-const CLICK_MAX_DIST=40;
-const CLICK_MAX_HISTORY=10;
+const MAX_HISTORY=15;
+const FAST_INTERVAL=90;
+const MIN_CLICKS_FOR_CHECK=6;
+const POSITION_TOLERANCE=6;
+const INTERVAL_TOLERANCE=20;
 let blockUntil=0;
 
 function checkAntiCheat(x, y){
   const now=Date.now();
   clickHistory.push({x,y,t:now});
-  if(clickHistory.length>CLICK_MAX_HISTORY) clickHistory.shift();
-  if(clickHistory.length<CLICK_MAX_HISTORY) return false;
-  const xs=clickHistory.map(p=>p.x);
-  const ys=clickHistory.map(p=>p.y);
+  if(clickHistory.length>MAX_HISTORY) clickHistory.shift();
+  
+  if(clickHistory.length<MIN_CLICKS_FOR_CHECK) return false;
+  if(now<blockUntil) return false;
+  
+  const recent=clickHistory.slice(-MIN_CLICKS_FOR_CHECK);
+  
+  const intervals=[];
+  for(let i=1;i<recent.length;i++) intervals.push(recent[i].t-recent[i-1].t);
+  const avgInterval=intervals.reduce((a,b)=>a+b,0)/intervals.length;
+  
+  if(avgInterval>FAST_INTERVAL) return false;
+  
+  const xs=recent.map(p=>p.x);
+  const ys=recent.map(p=>p.y);
   const dx=Math.max(...xs)-Math.min(...xs);
   const dy=Math.max(...ys)-Math.min(...ys);
-  if(dx<CLICK_MAX_DIST && dy<CLICK_MAX_DIST){
+  
+  const variance=intervals.reduce((a,b)=>a+Math.pow(b-avgInterval,2),0)/intervals.length;
+  const stdDev=Math.sqrt(variance);
+  
+  const isFast=avgInterval<FAST_INTERVAL;
+  const isSameSpot=dx<POSITION_TOLERANCE && dy<POSITION_TOLERANCE;
+  const isRegular=stdDev<INTERVAL_TOLERANCE;
+  
+  if(isFast && isSameSpot && isRegular){
     blockUntil=now+3000;
     clickHistory.length=0;
     showWarning();
@@ -373,4 +395,4 @@ document.addEventListener('visibilitychange', ()=>{ if(document.hidden) save(); 
 render();
 </script>
 </body>
-</html>
+  </html>
