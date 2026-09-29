@@ -276,77 +276,139 @@ function render(){
     : 'Перерождение (даст x2)';
 }
 
-// === Anti-autoclicker (умная защита) ===
-const clickHistory=[];
-const MAX_HISTORY=15;
-const FAST_INTERVAL=90;
-const MIN_CLICKS_FOR_CHECK=6;
-const POSITION_TOLERANCE=6;
-const INTERVAL_TOLERANCE=20;
-let blockUntil=0;
+// === Anti-autoclicker v2 ===
+const clickHistory = [];
+const WINDOW_MS = 4000;              // окно анализа
+const MIN_CLICKS = 8;                // минимум кликов для анализа
+const MAX_HUMAN_CPS = 15;            // выше — почти невозможно руками
+const REGULARITY_CV = 0.08;          // коэф. вариации < 0.08 => слишком ровно
+const STATIC_TOLERANCE = 3;          // px: попадание в одну точку
+const SUSPICION_THRESHOLD = 5;       // порог подозрительности
+const SUSPICION_DECAY_PER_SEC = 0.5; // очки подозрения «остывают»
 
-function checkAntiCheat(x, y){
-  const now=Date.now();
-  clickHistory.push({x,y,t:now});
-  if(clickHistory.length>MAX_HISTORY) clickHistory.shift();
-  
-  if(clickHistory.length<MIN_CLICKS_FOR_CHECK) return false;
-  if(now<blockUntil) return false;
-  
-  const recent=clickHistory.slice(-MIN_CLICKS_FOR_CHECK);
-  
-  const intervals=[];
-  for(let i=1;i<recent.length;i++) intervals.push(recent[i].t-recent[i-1].t);
-  const avgInterval=intervals.reduce((a,b)=>a+b,0)/intervals.length;
-  
-  if(avgInterval>FAST_INTERVAL) return false;
-  
-  const xs=recent.map(p=>p.x);
-  const ys=recent.map(p=>p.y);
-  const dx=Math.max(...xs)-Math.min(...xs);
-  const dy=Math.max(...ys)-Math.min(...ys);
-  
-  const variance=intervals.reduce((a,b)=>a+Math.pow(b-avgInterval,2),0)/intervals.length;
-  const stdDev=Math.sqrt(variance);
-  
-  const isFast=avgInterval<FAST_INTERVAL;
-  const isSameSpot=dx<POSITION_TOLERANCE && dy<POSITION_TOLERANCE;
-  const isRegular=stdDev<INTERVAL_TOLERANCE;
-  
-  if(isFast && isSameSpot && isRegular){
-    blockUntil=now+3000;
-    clickHistory.length=0;
-    showWarning();
+let blockUntil = 0;
+let suspicionScore = 0;
+let lastDecay = Date.now();
+
+function decaySuspicion(){
+  const now = Date.now();
+  const dt = (now - lastDecay) / 1000;
+  if(dt > 0.5){
+    suspicionScore = Math.max(0, suspicionScore - dt * SUSPICION_DECAY_PER_SEC);
+    lastDecay = now;
+  }
+}
+
+function analyzeClicks(){
+  const now = Date.now();
+  while(clickHistory.length && now - clickHistory[0].t > WINDOW_MS) clickHistory.shift();
+  if(clickHistory.length < MIN_CLICKS) return null;
+
+  const n = clickHistory.length;
+  const duration = clickHistory[n-1].t - clickHistory[0].t;
+  if(duration < 800) return null; // слишком короткая серия — не анализируем
+
+  const cps = (n - 1) / (duration / 1000);
+
+  const intervals = [];
+  for(let i = 1; i < n; i++) intervals.push(clickHistory[i].t - clickHistory[i-1].t);
+  const avg = intervals.reduce((a,b)=>a+b, 0) / intervals.length;
+  const variance = intervals.reduce((a,b)=>a+Math.pow(b-avg,2), 0) / intervals.length;
+  const stdDev = Math.sqrt(variance);
+  const cv = avg > 0 ? stdDev / avg : 1; // коэффициент вариации
+
+  const xs = clickHistory.map(p => p.x);
+  const ys = clickHistory.map(p => p.y);
+  const dx = Math.max(...xs) - Math.min(...xs);
+  const dy = Math.max(...ys) - Math.min(...ys);
+
+  return { n, cps, avg, stdDev, cv, dx, dy };
+}
+
+function checkAntiCheat(x, y, isTrusted){
+  const now = Date.now();
+
+  // 1. Программные события через dispatchEvent — почти всегда чит
+  if(isTrusted === false){
+    triggerBlock(['синтетическое событие']);
     return true;
   }
+
+  if(now < blockUntil) return true;
+
+  clickHistory.push({x, y, t: now});
+  decaySuspicion();
+
+  const a = analyzeClicks();
+  if(!a) return false;
+
+  const reasons = [];
+
+  // 2. Слишком ровные интервалы — классический признак автокликера
+  if(a.cv < REGULARITY_CV && a.avg < 400){
+    suspicionScore += 2;
+    reasons.push('регулярные интервалы');
+  }
+
+  // 3. Нечеловеческий CPS
+  if(a.cps > MAX_HUMAN_CPS){
+    suspicionScore += 3;
+    reasons.push('слишком высокий CPS');
+  } else if(a.cps > 8 && a.cv < 0.15){
+    // средний, но подозрительно стабильный темп
+    suspicionScore += 2;
+    reasons.push('ровный быстрый темп');
+  }
+
+  // 4. Клики в одну и ту же пиксельную точку
+  if(a.dx < STATIC_TOLERANCE && a.dy < STATIC_TOLERANCE && a.cps > 5){
+    suspicionScore += 1;
+    reasons.push('клики в одну точку');
+  }
+
+  if(suspicionScore >= SUSPICION_THRESHOLD){
+    triggerBlock(reasons);
+    return true;
+  }
+
   return false;
 }
 
-let warningTimeout;
-function showWarning(){
-  const w=$('warning');
-  w.classList.add('show');
-  clearTimeout(warningTimeout);
-  warningTimeout=setTimeout(()=>w.classList.remove('show'), 2500);
+function triggerBlock(reasons){
+  blockUntil = Date.now() + 5000;
+  clickHistory.length = 0;
+  suspicionScore = 0;
+  lastDecay = Date.now();
+  showWarning(reasons);
 }
 
-function doClick(x, y){
-  if(Date.now()<blockUntil) return;
-  if(checkAntiCheat(x, y)) return;
-  state.coins+=getPerClick();
+let warningTimeout;
+function showWarning(reasons){
+  const w = $('warning');
+  w.textContent = '🖱️ Обнаружен автокликер!' +
+    (reasons && reasons.length ? ' (' + reasons.join(', ') + ')' : '');
+  w.classList.add('show');
+  clearTimeout(warningTimeout);
+  warningTimeout = setTimeout(()=>w.classList.remove('show'), 3000);
+}
+
+function doClick(x, y, isTrusted){
+  if(Date.now() < blockUntil) return;
+  if(checkAntiCheat(x, y, isTrusted)) return;
+  state.coins += getPerClick();
   render(); save();
 }
 
 $pcBox.addEventListener('touchstart', e=>{
   e.preventDefault();
-  if(e.touches.length>2) return;
-  for(const t of e.changedTouches) doClick(t.clientX, t.clientY);
+  if(e.touches.length > 2) return;
+  for(const t of e.changedTouches) doClick(t.clientX, t.clientY, e.isTrusted);
   $pcBox.style.transform='scale(0.92)';
   setTimeout(()=>{ $pcBox.style.transform=''; }, 80);
 }, {passive:false});
 
 $pcBox.addEventListener('click', e=>{
-  doClick(e.clientX, e.clientY);
+  doClick(e.clientX, e.clientY, e.isTrusted);
   $pcBox.style.transform='scale(0.92)';
   setTimeout(()=>{ $pcBox.style.transform=''; }, 80);
 });
@@ -395,4 +457,4 @@ document.addEventListener('visibilitychange', ()=>{ if(document.hidden) save(); 
 render();
 </script>
 </body>
-  </html>
+</html>
