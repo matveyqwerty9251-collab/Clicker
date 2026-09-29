@@ -2,199 +2,375 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,maximum-scale=1">
 <title>OS Clicker</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-tap-highlight-color:transparent}
-body{font-family:system-ui,sans-serif;background:#0a0a14;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px;overflow-x:hidden}
-h1{font-size:20px;color:#a855f7;letter-spacing:1px;margin-bottom:4px}
-.ver{font-size:13px;color:#888;margin-bottom:8px}
-.coins{font-size:30px;font-weight:700;margin:6px 0;color:#fff}
-.coins small{font-size:14px;color:#a855f7;font-weight:400}
-.rebirth-info{font-size:12px;color:#22c55e;margin-bottom:8px}
-.pc{font-size:100px;cursor:pointer;transition:transform .1s;filter:drop-shadow(0 0 20px #a855f7);margin:16px 0;line-height:1}
-.pc:active{transform:scale(.9)}
-.shop{width:100%;max-width:420px}
-.upgrade{background:#15152a;border:1px solid #2a2a4a;border-radius:12px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:all .2s}
-.upgrade:hover{border-color:#a855f7}
-.upgrade.disabled{opacity:.4;cursor:not-allowed}
-.upgrade .info{flex:1}
-.upgrade .name{font-weight:600;font-size:14px}
-.upgrade .desc{font-size:11px;color:#888;margin-top:2px}
-.upgrade .price{color:#a855f7;font-weight:700;font-size:13px;white-space:nowrap;margin-left:8px}
-.upgrade .count{color:#22c55e;font-size:11px;margin-left:4px}
-.rebirth{width:100%;max-width:420px;margin-top:10px;padding:14px;background:#a855f7;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer}
-.rebirth:disabled{background:#333;color:#666;cursor:not-allowed}
+html,body{width:100%;overflow-x:hidden}
+body{font-family:system-ui,sans-serif;background:#0a0a14;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:10px;padding-bottom:30px}
+h1{font-size:18px;color:#a855f7;letter-spacing:2px;margin-bottom:2px}
+.ver{font-size:12px;color:#888;margin-bottom:4px;text-align:center;padding:0 8px}
+.coins{font-size:clamp(20px,7vw,32px);font-weight:700;margin:4px 0;color:#fff;text-align:center;max-width:100%;overflow:hidden;white-space:nowrap;padding:0 8px}
+.coins small{font-size:0.5em;color:#a855f7}
+.stats{font-size:12px;color:#22c55e;margin-bottom:6px;text-align:center}
+.pc-box{width:140px;height:140px;display:flex;align-items:center;justify-content:center;margin:8px 0;filter:drop-shadow(0 0 15px #a855f7);transition:transform .08s;cursor:pointer}
+.pc-box:active{transform:scale(0.92)}
+.pc-box svg{width:100%;height:100%}
+.shop{width:100%;max-width:440px}
+.upgrade{background:#15152a;border:1px solid #2a2a4a;border-radius:10px;padding:10px;margin-bottom:8px;display:flex;flex-direction:column;gap:6px}
+.upgrade.disabled{opacity:.5}
+.up-row{display:flex;justify-content:space-between;align-items:center}
+.up-info{flex:1;min-width:0}
+.up-name{font-weight:600;font-size:13px}
+.up-count{color:#22c55e;font-size:11px;margin-left:4px}
+.up-desc{font-size:10px;color:#888;margin-top:1px}
+.up-price{color:#a855f7;font-weight:700;font-size:12px;white-space:nowrap;margin-left:6px}
+.buy-row{display:flex;gap:4px}
+.buy-btn{flex:1;background:#2a2a4a;color:#fff;border:none;border-radius:6px;padding:6px 2px;font-size:11px;font-weight:600;cursor:pointer}
+.buy-btn:not(:disabled):active{background:#a855f7}
+.buy-btn:disabled{background:#1a1a2a;color:#555}
+.os-up-row{display:flex;justify-content:space-between;align-items:center;width:100%}
+.os-buy{background:#a855f7;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.os-buy:disabled{background:#333;color:#666}
+.os-buy:not(:disabled):active{background:#7e22ce}
+.rebirth-btn{width:100%;max-width:440px;margin-top:8px;padding:14px;background:#a855f7;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer}
+.rebirth-btn:disabled{background:#333;color:#666}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:#15152a;border:1px solid #a855f7;border-radius:14px;padding:20px;max-width:340px;width:100%}
+.modal h3{color:#a855f7;font-size:16px;margin-bottom:10px}
+.modal p{font-size:13px;color:#ccc;margin-bottom:16px;line-height:1.4}
+.modal-btns{display:flex;gap:10px}
+.modal-btns button{flex:1;padding:10px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer}
+.modal-cancel{background:#2a2a4a;color:#fff}
+.modal-ok{background:#a855f7;color:#fff}
+.warning{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#dc2626;color:#fff;padding:10px 16px;border-radius:8px;font-size:12px;font-weight:600;display:none;z-index:200;text-align:center;max-width:90vw}
+.warning.show{display:block}
 </style>
 </head>
 <body>
 <h1>OS CLICKER</h1>
 <div class="ver" id="ver">DOS 1.0</div>
-<div class="coins" id="coins">0 <small>⚡</small></div>
-<div class="rebirth-info" id="rebirthInfo"></div>
-<div class="pc" id="pc">💻</div>
+<div class="coins" id="coins">0 ⚡</div>
+<div class="stats" id="stats">Клик: 1 | В сек: 0</div>
+<div class="pc-box" id="pcBox"></div>
 <div class="shop" id="shop"></div>
-<button class="rebirth" id="rebirthBtn" disabled>Перерождение (нужен топ)</button>
+<button class="rebirth-btn" id="rebirthBtn" disabled>Перерождение</button>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3 id="modalTitle">Заголовок</h3>
+    <p id="modalText">Текст</p>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal(false)">Отмена</button>
+      <button class="modal-ok" onclick="closeModal(true)">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="warning" id="warning">🖱️ Нельзя кликать в одну точку!</div>
 
 <script>
-// Список ОС от древних к новым
 const OS_LIST = [
-  {name:"DOS 1.0", emoji:"🖥️", mult:1},
-  {name:"Windows 3.1", emoji:"🪟", mult:3},
-  {name:"Windows 95", emoji:"🪟", mult:8},
-  {name:"Windows 98", emoji:"🪟", mult:18},
-  {name:"Windows XP", emoji:"🪟", mult:40},
-  {name:"Windows 7", emoji:"🪟", mult:90},
-  {name:"Windows 10", emoji:"🪟", mult:200},
-  {name:"Windows 11", emoji:"🪟", mult:450},
-  {name:"Ubuntu 20.04", emoji:"🐧", mult:1000},
-  {name:"Arch Linux", emoji:"🐧", mult:2500},
-  {name:"Kali Linux", emoji:"🐧", mult:6000},
-  {name:"macOS Ventura", emoji:"🍎", mult:15000},
-  {name:"Fedora Workstation", emoji:"🐧", mult:40000},
-  {name:"Windows 12 Quantum", emoji:"🔮", mult:100000},
-  {name:"OS Singularity", emoji:"⚡", mult:500000}
+  {name:"DOS 1.0", mult:1, screen:"#1a1a1a", accent:"#22c55e", logo:"cmd"},
+  {name:"Windows 3.1", mult:2, screen:"#1e3a8a", accent:"#60a5fa", logo:"win4"},
+  {name:"Windows 95", mult:4, screen:"#0a4a0a", accent:"#22c55e", logo:"win4"},
+  {name:"Windows 98", mult:8, screen:"#1e40af", accent:"#60a5fa", logo:"win4"},
+  {name:"Windows XP", mult:20, screen:"#3b82f6", accent:"#22c55e", logo:"xp"},
+  {name:"Windows 7", mult:50, screen:"#0a0a3a", accent:"#60a5fa", logo:"win7"},
+  {name:"Windows 10", mult:120, screen:"#0f172a", accent:"#38bdf8", logo:"win4"},
+  {name:"Windows 11", mult:300, screen:"#0f172a", accent:"#38bdf8", logo:"win4"},
+  {name:"Ubuntu 20.04", mult:750, screen:"#1a0a0a", accent:"#f97316", logo:"ubuntu"},
+  {name:"Arch Linux", mult:1800, screen:"#0a0a14", accent:"#38bdf8", logo:"arch"},
+  {name:"Kali Linux", mult:4500, screen:"#0a0a14", accent:"#22c55e", logo:"kali"},
+  {name:"macOS Ventura", mult:11000, screen:"#0f172a", accent:"#94a3b8", logo:"apple"},
+  {name:"Fedora Workstation", mult:27000, screen:"#0a1a3a", accent:"#3b82f6", logo:"fedora"},
+  {name:"Windows 12 Quantum", mult:70000, screen:"#1a0a2a", accent:"#a855f7", logo:"win4"},
+  {name:"OS Singularity", mult:200000, screen:"#1a0a2a", accent:"#eab308", logo:"bolt"}
 ];
 
-let state = {
-  coins: 0,
-  osIndex: 0,
-  rebirths: 0,
-  rebirthMult: 1,
-  upgrades: {
-    click: {name:"Мышь быстрее", desc:"+1 к клику", base:15, count:0},
-    cpu:   {name:"Мощный CPU", desc:"+1 ⚡/сек", base:40, count:0},
-    ram:   {name:"Больше RAM", desc:"x2 к клику", base:400, count:0},
-    gpu:   {name:"Видеокарта", desc:"+10 ⚡/сек", base:600, count:0},
-    ssd:   {name:"SSD диск", desc:"+50 ⚡/сек", base:3000, count:0},
-    server:{name:"Сервер", desc:"+200 ⚡/сек", base:15000, count:0}
+function getSVG(os){
+  const s=os.screen, a=os.accent;
+  let logo='';
+  if(os.logo==='cmd'){
+    logo='<text x="50" y="52" fill="'+a+'" font-family="monospace" font-size="10" text-anchor="middle">C:\\&gt;</text>';
+  } else if(os.logo==='win4'){
+    logo='<rect x="35" y="30" width="13" height="13" fill="'+a+'"/><rect x="52" y="30" width="13" height="13" fill="'+a+'"/><rect x="35" y="47" width="13" height="13" fill="'+a+'"/><rect x="52" y="47" width="13" height="13" fill="'+a+'"/>';
+  } else if(os.logo==='xp'){
+    logo='<rect x="30" y="30" width="40" height="35" fill="#3b82f6"/><path d="M30 55 Q50 45 70 50 L70 65 L30 65 Z" fill="#22c55e"/>';
+  } else if(os.logo==='win7'){
+    logo='<circle cx="50" cy="45" r="15" fill="none" stroke="'+a+'" stroke-width="3"/><path d="M50 30 A15 15 0 0 1 65 45" fill="'+a+'"/><path d="M50 30 A15 15 0 0 0 35 45" fill="#fbbf24"/><path d="M35 45 A15 15 0 0 0 50 60" fill="#22c55e"/><path d="M65 45 A15 15 0 0 1 50 60" fill="#ef4444"/>';
+  } else if(os.logo==='ubuntu'){
+    logo='<circle cx="50" cy="45" r="14" fill="none" stroke="'+a+'" stroke-width="4"/><circle cx="50" cy="45" r="3" fill="'+a+'"/><circle cx="40" cy="38" r="2" fill="'+a+'"/><circle cx="60" cy="38" r="2" fill="'+a+'"/><circle cx="50" cy="57" r="2" fill="'+a+'"/>';
+  } else if(os.logo==='arch'){
+    logo='<path d="M50 25 L65 62 L55 55 L50 65 L45 55 L35 62 Z" fill="'+a+'"/>';
+  } else if(os.logo==='kali'){
+    logo='<path d="M35 45 Q40 30 50 32 Q60 30 65 45 Q60 55 50 55 Q40 55 35 45 Z" fill="'+a+'" opacity="0.7"/><circle cx="42" cy="42" r="2" fill="#fff"/><circle cx="58" cy="42" r="2" fill="#fff"/>';
+  } else if(os.logo==='apple'){
+    logo='<path d="M50 30 Q45 25 42 28 Q38 32 40 38 Q36 40 37 47 Q39 58 48 60 Q52 60 55 57 Q58 60 62 58 Q66 55 64 47 Q64 40 60 38 Q62 32 58 28 Q55 25 50 30 Z" fill="'+a+'"/><ellipse cx="50" cy="28" rx="3" ry="2" fill="'+a+'"/>';
+  } else if(os.logo==='fedora'){
+    logo='<circle cx="50" cy="45" r="14" fill="'+a+'"/><text x="50" y="51" fill="#fff" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle">f</text>';
+  } else if(os.logo==='bolt'){
+    logo='<path d="M55 22 L38 48 L48 48 L45 68 L62 42 L52 42 Z" fill="'+a+'"/>';
   }
-};
-
-const saved = localStorage.getItem('osClicker');
-if (saved) { try { const s = JSON.parse(saved); Object.assign(state, s); } catch(e){} }
-
-const $ = id => document.getElementById(id);
-const $coins = $('coins'), $pc = $('pc'), $shop = $('shop'), $ver = $('ver'), $rebirthInfo = $('rebirthInfo'), $rebirthBtn = $('rebirthBtn');
-
-function fmt(n){
-  if (n >= 1e12) return (n/1e12).toFixed(2)+'T';
-  if (n >= 1e9) return (n/1e9).toFixed(2)+'B';
-  if (n >= 1e6) return (n/1e6).toFixed(2)+'M';
-  if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
-  return Math.floor(n);
+  return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'+
+    '<rect x="15" y="18" width="70" height="50" rx="3" fill="#d0d0d0" stroke="#666" stroke-width="1.5"/>'+
+    '<rect x="20" y="23" width="60" height="40" fill="'+s+'"/>'+logo+
+    '<rect x="42" y="68" width="16" height="6" fill="#999"/>'+
+    '<rect x="30" y="74" width="40" height="4" rx="2" fill="#666"/>'+
+    '<rect x="40" y="80" width="20" height="2" rx="1" fill="#444"/></svg>';
 }
+
+const SUFFIXES=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc','UDc','DDc','TDc','QaDc','QiDc','SxDc','SpDc','OcDc','NoDc','Vg'];
+function fmt(n){
+  if(!isFinite(n)||isNaN(n)) return '∞';
+  if(n<1000) return Math.floor(n).toString();
+  let i=0;
+  while(n>=1000 && i<SUFFIXES.length-1){ n/=1000; i++; }
+  if(n>=1000) return n.toExponential(1);
+  return (n<10?n.toFixed(2):n<100?n.toFixed(1):n.toFixed(0))+SUFFIXES[i];
+}
+
+const UPGRADE_DEFS={
+  click:{name:"Мышь быстрее", desc:"+1 к клику", base:15, growth:1.15},
+  cpu:{name:"Мощный CPU", desc:"+1 ⚡/сек", base:40, growth:1.18},
+  ram:{name:"Больше RAM", desc:"+0.5x к клику", base:400, growth:1.25},
+  gpu:{name:"Видеокарта", desc:"+5 ⚡/сек", base:600, growth:1.2},
+  ssd:{name:"SSD диск", desc:"+20 ⚡/сек", base:3000, growth:1.2},
+  server:{name:"Сервер", desc:"+100 ⚡/сек", base:15000, growth:1.22}
+};
+const MAX_LEVEL=100;
+
+let state={coins:0, osIndex:0, rebirths:0, upgrades:{}};
+for(const k in UPGRADE_DEFS) state.upgrades[k]=0;
+
+try{
+  const saved=localStorage.getItem('osClickerV2');
+  if(saved){
+    const s=JSON.parse(saved);
+    state.coins=s.coins||0;
+    state.osIndex=s.osIndex||0;
+    state.rebirths=s.rebirths||0;
+    for(const k in UPGRADE_DEFS) state.upgrades[k]=(s.upgrades&&s.upgrades[k])||0;
+  }
+}catch(e){}
+
+const $=id=>document.getElementById(id);
+const $coins=$('coins'), $pcBox=$('pcBox'), $shop=$('shop'), $ver=$('ver'), $stats=$('stats'), $rebirthBtn=$('rebirthBtn');
 
 function currentOS(){ return OS_LIST[state.osIndex]; }
+function rebirthMult(){ return state.rebirths===0?1:state.rebirths*2; }
 
-function getCost(key){
-  const u = state.upgrades[key];
-  return Math.floor(u.base * Math.pow(1.15, u.count));
+function getCost(key, lvl){
+  const u=UPGRADE_DEFS[key];
+  lvl=lvl===undefined?state.upgrades[key]:lvl;
+  return Math.floor(u.base*Math.pow(u.growth, lvl));
 }
-
 function getPerClick(){
-  let base = 1 + state.upgrades.click.count;
-  base *= Math.pow(2, state.upgrades.ram.count);
-  base *= currentOS().mult;
-  base *= state.rebirthMult;
+  let base=1+state.upgrades.click;
+  base*=(1+state.upgrades.ram*0.5);
+  base*=currentOS().mult;
+  base*=rebirthMult();
   return base;
 }
-
 function getPerSec(){
-  let base = state.upgrades.cpu.count + state.upgrades.gpu.count*10 + state.upgrades.ssd.count*50 + state.upgrades.server.count*200;
-  base *= currentOS().mult;
-  base *= state.rebirthMult;
+  let base=state.upgrades.cpu*1+state.upgrades.gpu*5+state.upgrades.ssd*20+state.upgrades.server*100;
+  base*=currentOS().mult;
+  base*=rebirthMult();
   return base;
 }
+function osCost(){ return Math.floor(1000*Math.pow(8, state.osIndex)); }
 
-function render(){
-  $coins.innerHTML = fmt(state.coins) + ' <small>⚡</small>';
-  $ver.textContent = currentOS().name + (state.rebirths > 0 ? ' | Перерождений: '+state.rebirths+' (x'+state.rebirthMult+')' : '');
-  $pc.textContent = currentOS().emoji;
-  $rebirthInfo.textContent = 'Клик: '+fmt(getPerClick())+' | В сек: '+fmt(getPerSec());
-  
-  // Проверка апгрейда ОС
-  const nextOS = OS_LIST[state.osIndex + 1];
-  let html = '';
-  if (nextOS) {
-    const cost = Math.floor(500 * Math.pow(6, state.osIndex));
-    const can = state.coins >= cost;
-    html += '<div class="upgrade '+(can?'':'disabled')+'" data-os="1">' +
-      '<div class="info"><div class="name">⬆️ Апгрейд до: '+nextOS.name+'</div>' +
-      '<div class="desc">x'+nextOS.mult+' к доходу</div></div>' +
-      '<div class="price">'+fmt(cost)+' ⚡</div></div>';
-  } else {
-    html += '<div class="upgrade" style="border-color:#22c55e">' +
-      '<div class="info"><div class="name">🏆 Максимальная ОС!</div>' +
-      '<div class="desc">Делай перерождение для x2</div></div></div>';
+function buyUpgrade(key, amount){
+  let bought=0;
+  while(bought<amount && state.upgrades[key]<MAX_LEVEL){
+    const c=getCost(key);
+    if(state.coins<c) break;
+    state.coins-=c;
+    state.upgrades[key]++;
+    bought++;
   }
-  
-  for (const key in state.upgrades) {
-    const u = state.upgrades[key];
-    const cost = getCost(key);
-    const can = state.coins >= cost;
-    html += '<div class="upgrade '+(can?'':'disabled')+'" data-key="'+key+'">' +
-      '<div class="info"><div class="name">'+u.name+' <span class="count">x'+u.count+'</span></div>' +
-      '<div class="desc">'+u.desc+'</div></div>' +
-      '<div class="price">'+fmt(cost)+' ⚡</div></div>';
-  }
-  $shop.innerHTML = html;
-  
-  document.querySelectorAll('.upgrade').forEach(el => {
-    el.onclick = () => {
-      if (el.dataset.os) buyOS();
-      else buy(el.dataset.key);
-    };
-  });
-  
-  $rebirthBtn.disabled = state.osIndex < OS_LIST.length - 1;
+  if(bought>0){ render(); save(); }
 }
-
+function buyMax(key){
+  while(state.upgrades[key]<MAX_LEVEL){
+    const c=getCost(key);
+    if(state.coins<c) break;
+    state.coins-=c;
+    state.upgrades[key]++;
+  }
+  render(); save();
+}
 function buyOS(){
-  const nextOS = OS_LIST[state.osIndex + 1];
-  if (!nextOS) return;
-  const cost = Math.floor(500 * Math.pow(6, state.osIndex));
-  if (state.coins < cost) return;
-  state.coins -= cost;
+  if(state.osIndex>=OS_LIST.length-1) return;
+  const c=osCost();
+  if(state.coins<c) return;
+  state.coins-=c;
   state.osIndex++;
   render(); save();
 }
 
-function buy(key){
-  const cost = getCost(key);
-  if (state.coins < cost) return;
-  state.coins -= cost;
-  state.upgrades[key].count++;
+function render(){
+  $coins.innerHTML=fmt(state.coins)+' <small>⚡</small>';
+  const rm=rebirthMult();
+  $ver.textContent=currentOS().name+(state.rebirths>0?' | Перерождений: '+state.rebirths+' (x'+rm+')':'');
+  $stats.textContent='Клик: '+fmt(getPerClick())+' | В сек: '+fmt(getPerSec());
+  $pcBox.innerHTML=getSVG(currentOS());
+  
+  let html='';
+  if(state.osIndex<OS_LIST.length-1){
+    const next=OS_LIST[state.osIndex+1];
+    const c=osCost();
+    const can=state.coins>=c;
+    html+='<div class="upgrade"><div class="os-up-row"><div class="up-info">'+
+      '<div class="up-name">⬆️ Апгрейд до: '+next.name+'</div>'+
+      '<div class="up-desc">x'+next.mult+' к доходу</div></div>'+
+      '<button class="os-buy" data-os-buy="1" '+(can?'':'disabled')+'>'+fmt(c)+' ⚡</button>'+
+      '</div></div>';
+  } else {
+    html+='<div class="upgrade" style="border-color:#22c55e"><div class="up-info">'+
+      '<div class="up-name">🏆 Максимальная ОС!</div>'+
+      '<div class="up-desc">Делай перерождение для роста</div></div></div>';
+  }
+  
+  for(const key in UPGRADE_DEFS){
+    const u=UPGRADE_DEFS[key];
+    const lvl=state.upgrades[key];
+    const c=getCost(key);
+    const can=state.coins>=c && lvl<MAX_LEVEL;
+    const maxed=lvl>=MAX_LEVEL;
+    html+='<div class="upgrade '+((can||maxed)?'':'disabled')+'">'+
+      '<div class="up-row"><div class="up-info">'+
+      '<div class="up-name">'+u.name+' <span class="up-count">x'+lvl+'/'+MAX_LEVEL+'</span></div>'+
+      '<div class="up-desc">'+u.desc+'</div></div>'+
+      '<div class="up-price">'+(maxed?'MAX':fmt(c)+' ⚡')+'</div></div>'+
+      '<div class="buy-row">'+
+      '<button class="buy-btn" data-key="'+key+'" data-amt="1" '+(can?'':'disabled')+'>x1</button>'+
+      '<button class="buy-btn" data-key="'+key+'" data-amt="10" '+(can?'':'disabled')+'>x10</button>'+
+      '<button class="buy-btn" data-key="'+key+'" data-amt="50" '+(can?'':'disabled')+'>x50</button>'+
+      '<button class="buy-btn" data-key="'+key+'" data-amt="max" '+(can?'':'disabled')+'>MAX</button>'+
+      '</div></div>';
+  }
+  $shop.innerHTML=html;
+  
+  $shop.querySelectorAll('[data-key]').forEach(btn=>{
+    btn.addEventListener('touchstart', e=>{
+      e.preventDefault();
+      const key=btn.dataset.key, amt=btn.dataset.amt;
+      if(amt==='max') buyMax(key); else buyUpgrade(key, parseInt(amt));
+    }, {passive:false});
+    btn.addEventListener('click', ()=>{
+      const key=btn.dataset.key, amt=btn.dataset.amt;
+      if(amt==='max') buyMax(key); else buyUpgrade(key, parseInt(amt));
+    });
+  });
+  $shop.querySelectorAll('[data-os-buy]').forEach(btn=>{
+    btn.addEventListener('touchstart', e=>{ e.preventDefault(); buyOS(); }, {passive:false});
+    btn.addEventListener('click', buyOS);
+  });
+  
+  $rebirthBtn.disabled=state.osIndex<OS_LIST.length-1;
+  const nextMult=(state.rebirths+1)*2;
+  $rebirthBtn.textContent=state.rebirths>0
+    ? 'Перерождение (x'+rebirthMult()+' → x'+nextMult+')'
+    : 'Перерождение (даст x2)';
+}
+
+// === Anti-autoclicker ===
+const clickHistory=[];
+const CLICK_MAX_DIST=40;
+const CLICK_MAX_HISTORY=10;
+let blockUntil=0;
+
+function checkAntiCheat(x, y){
+  const now=Date.now();
+  clickHistory.push({x,y,t:now});
+  if(clickHistory.length>CLICK_MAX_HISTORY) clickHistory.shift();
+  if(clickHistory.length<CLICK_MAX_HISTORY) return false;
+  const xs=clickHistory.map(p=>p.x);
+  const ys=clickHistory.map(p=>p.y);
+  const dx=Math.max(...xs)-Math.min(...xs);
+  const dy=Math.max(...ys)-Math.min(...ys);
+  if(dx<CLICK_MAX_DIST && dy<CLICK_MAX_DIST){
+    blockUntil=now+3000;
+    clickHistory.length=0;
+    showWarning();
+    return true;
+  }
+  return false;
+}
+
+let warningTimeout;
+function showWarning(){
+  const w=$('warning');
+  w.classList.add('show');
+  clearTimeout(warningTimeout);
+  warningTimeout=setTimeout(()=>w.classList.remove('show'), 2500);
+}
+
+function doClick(x, y){
+  if(Date.now()<blockUntil) return;
+  if(checkAntiCheat(x, y)) return;
+  state.coins+=getPerClick();
   render(); save();
 }
 
-$pc.onclick = () => {
-  state.coins += getPerClick();
-  $pc.style.transform = 'scale(0.9)';
-  setTimeout(()=>{ $pc.style.transform=''; }, 80);
-  render();
-};
+$pcBox.addEventListener('touchstart', e=>{
+  e.preventDefault();
+  if(e.touches.length>2) return;
+  for(const t of e.changedTouches) doClick(t.clientX, t.clientY);
+  $pcBox.style.transform='scale(0.92)';
+  setTimeout(()=>{ $pcBox.style.transform=''; }, 80);
+}, {passive:false});
 
-$rebirthBtn.onclick = () => {
-  if (state.osIndex < OS_LIST.length - 1) return;
-  if (!confirm('Перерождение? Весь прогресс сбросится, но доход x2 навсегда.')) return;
+$pcBox.addEventListener('click', e=>{
+  doClick(e.clientX, e.clientY);
+  $pcBox.style.transform='scale(0.92)';
+  setTimeout(()=>{ $pcBox.style.transform=''; }, 80);
+});
+
+// === Modal ===
+let modalResolve=null;
+function showModal(title, text){
+  return new Promise(res=>{
+    modalResolve=res;
+    $('modalTitle').textContent=title;
+    $('modalText').textContent=text;
+    $('modalBg').classList.add('show');
+  });
+}
+function closeModal(ok){
+  $('modalBg').classList.remove('show');
+  if(modalResolve){ modalResolve(ok); modalResolve=null; }
+}
+window.closeModal=closeModal;
+
+$rebirthBtn.addEventListener('click', async ()=>{
+  if(state.osIndex<OS_LIST.length-1) return;
+  const cur=rebirthMult();
+  const next=(state.rebirths+1)*2;
+  const ok=await showModal('Перерождение',
+    'Весь прогресс сбросится, но доход станет x'+next+' (было x'+cur+'). Продолжить?');
+  if(!ok) return;
   state.rebirths++;
-  state.rebirthMult *= 2;
-  state.coins = 0;
-  state.osIndex = 0;
-  for (const k in state.upgrades) state.upgrades[k].count = 0;
+  state.coins=0;
+  state.osIndex=0;
+  for(const k in UPGRADE_DEFS) state.upgrades[k]=0;
   render(); save();
-};
+});
 
-setInterval(() => {
-  const ps = getPerSec();
-  if (ps > 0) { state.coins += ps; render(); }
+// === Save ===
+function save(){ localStorage.setItem('osClickerV2', JSON.stringify(state)); }
+
+setInterval(()=>{
+  const ps=getPerSec();
+  if(ps>0){ state.coins+=ps; render(); }
 }, 1000);
-
-setInterval(save, 5000);
-function save(){ localStorage.setItem('osClicker', JSON.stringify(state)); }
+setInterval(save, 3000);
+window.addEventListener('beforeunload', save);
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) save(); });
 
 render();
 </script>
 </body>
-  </html>
+</html>
